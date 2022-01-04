@@ -14,8 +14,9 @@ class LoginViewController: UIViewController {
     
     var gradientOfView: CAGradientLayer!
 
-    private let name = "Bob"
-    private let password = "Password"
+//    private let name = "Bob"
+//    private let password = "Password"
+    private let user = User.getUser()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,27 +28,31 @@ class LoginViewController: UIViewController {
         passwordTextField.returnKeyType = .done
         
         let gradient = GradientForView()
-        
-        view.backgroundColor = UIColor.clear
-        let backgroundLayer = gradient.gradientLayer
-        backgroundLayer.frame = view.frame
-        view.layer.insertSublayer(backgroundLayer, at: 0)
+
+        gradient.setBackground(for: view)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let welcomeSegue = segue.destination as? WelcomeViewController {
-            welcomeSegue.username = usernameTextField.text ?? "User"
+        let tabBarController = segue.destination as! UITabBarController
+        
+        for viewController in tabBarController.viewControllers! {
+            if let welcomeSegue = viewController as? WelcomeViewController {
+                welcomeSegue.person = user.person
+            } else if let navigationVC = viewController as? UINavigationController {
+                let personVC = navigationVC.topViewController as! PersonViewController
+                personVC.person = user.person
+            }
         }
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
-        self.view.endEditing(true)
+        view.endEditing(true)
     }
 
     @IBAction func showHint(_ sender: UIButton) {
         let place = sender.restorationIdentifier == "nameHint" ? "name" : "password"
-        let value = sender.restorationIdentifier == "nameHint" ? name : password
+        let value = sender.restorationIdentifier == "nameHint" ? user.login : user.password
 
         showAlert(
             title: "OOOPS!",
@@ -55,7 +60,7 @@ class LoginViewController: UIViewController {
     }
     
     @IBAction func logIn() {
-        if (usernameTextField.text != name || passwordTextField.text != password) {
+        if (usernameTextField.text != user.login || passwordTextField.text != user.password) {
             showAlert(
                 title: "Invalid login or password",
                 message: "Please, enter correct login and password")
@@ -85,7 +90,9 @@ extension LoginViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField.restorationIdentifier == "nameField" && !(textField.text?.isEmpty ?? true) {
             passwordTextField.becomeFirstResponder()
-            return false
+        } else if textField.restorationIdentifier == "passwordField" {
+            logIn()
+            performSegue(withIdentifier: "showWelcomeVC", sender: nil)
         }
         
         return true
